@@ -64,7 +64,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
       if (name) {
         return name
           .split(" ")
-          .map((n) => n[0])
+          .map((n: string) => n[0])
           .join("")
           .toUpperCase()
           .slice(0, 2) // Limit to 2 characters
@@ -133,39 +133,51 @@ export function DashboardNav({ user }: DashboardNavProps) {
           <div className="flex">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard" className="flex items-center gap-3">
+              <Link href="/dashboard" className="flex items-center gap-3 group">
                 <Image
                   src="/images/trace-green-logo.png"
                   alt="Trace Green"
                   width={32}
                   height={32}
-                  className="rounded-lg"
+                  className="rounded-lg shadow-sm group-hover:shadow-glow transition-shadow"
                 />
-                <span className="text-xl font-bold text-primary">Trace Green</span>
+                <span className="text-xl font-bold text-gradient-primary bg-clip-text">Trace Green</span>
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {navigation.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium gap-2",
-                      isActive
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300",
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {item.name}
-                  </Link>
-                )
-              })}
+            <div className="hidden sm:ml-10 sm:flex sm:items-center">
+              <ul className="flex gap-2">
+                {navigation.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "group/nav relative flex items-center gap-2 px-3 py-2 text-sm font-medium leading-none transition-colors",
+                          "text-foreground/70 hover:text-foreground",
+                          isActive && "text-foreground"
+                        )}
+                      >
+                        <Icon className="w-4 h-4 transition-colors group-hover/nav:text-foreground" />
+                        <span>{item.name}</span>
+                        {/* Active underline */}
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute left-2 right-2 -bottom-[6px] h-[3px] rounded-full bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity",
+                            isActive && "opacity-100"
+                          )}
+                          aria-hidden="true"
+                        />
+                        {/* Hover subtle background (not affecting layout) */}
+                        <span className="pointer-events-none absolute inset-0 rounded-md bg-muted/60 opacity-0 group-hover/nav:opacity-100 transition-opacity" />
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
           </div>
 
