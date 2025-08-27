@@ -136,15 +136,17 @@ export default function TrackActivityPage() {
       const category = categories[selectedCategory as keyof typeof categories]
       const activity = category.activities.find((a) => a.name === selectedActivity)
 
-      const { error } = await supabase.from("carbon_entries").insert({
+      const { error } = await supabase.from("carbon_activities").insert({
         user_id: user.id,
         category: selectedCategory,
         activity_type: selectedActivity,
-        amount: Number.parseFloat(amount),
-        unit: activity?.unit || "",
         carbon_footprint: calculatedCarbon,
-        notes: notes || null,
         date: new Date().toISOString().split("T")[0],
+        description: notes || null,
+        metadata: {
+          amount: Number.parseFloat(amount),
+          unit: activity?.unit || "",
+        }
       })
 
       if (error) throw error

@@ -185,17 +185,22 @@ export function DashboardNav({ user }: DashboardNavProps) {
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
-                    <AvatarFallback>{userInitials}</AvatarFallback>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="Profile" />
+                    <AvatarFallback className="bg-gradient-to-br from-green-400 to-cyan-400 text-white font-semibold">
+                      {userInitials}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.user_metadata?.full_name || "User"}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.user_metadata?.full_name || 
+                       (user?.email ? user.email.split('@')[0] : "User")}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
@@ -258,12 +263,17 @@ export function DashboardNav({ user }: DashboardNavProps) {
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user?.user_metadata?.avatar_url || "/placeholder.svg"} alt="Profile" />
-                  <AvatarFallback>{userInitials}</AvatarFallback>
+                  <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="Profile" />
+                  <AvatarFallback className="bg-gradient-to-br from-green-400 to-cyan-400 text-white font-semibold">
+                    {userInitials}
+                  </AvatarFallback>
                 </Avatar>
               </div>
               <div className="ml-3">
-                <div className="text-base font-medium text-foreground">{user?.user_metadata?.full_name || "User"}</div>
+                <div className="text-base font-medium text-foreground">
+                  {user?.user_metadata?.full_name || 
+                   (user?.email ? user.email.split('@')[0] : "User")}
+                </div>
                 <div className="text-sm font-medium text-muted-foreground">{user?.email}</div>
               </div>
             </div>

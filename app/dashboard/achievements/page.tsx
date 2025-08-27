@@ -122,55 +122,45 @@ export default function AchievementsPage() {
       // Load achievements with user progress
       const { data: achievementsData, error: achievementsError } = await supabase
         .from("achievements")
-        .select(
-          `
-          id,
-          name,
-          description,
-          target_value,
-          achievement_type,
-          points_reward,
-          user_achievements:user_achievements!inner (
-            progress,
-            completed,
-            completed_at
-          )
-        `,
-        )
-        .eq("user_achievements.user_id", userId)
-        .eq("is_active", true)
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
 
       if (achievementsError) throw achievementsError
 
-      // Transform achievements data
-      const transformedAchievements = achievementsData?.map((item) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description,
-        target_value: item.target_value,
-        achievement_type: item.achievement_type,
-        points_reward: item.points_reward,
-        user_achievement: Array.isArray(item.user_achievements) ? item.user_achievements[0] : item.user_achievements,
+      // Transform achievements data - the achievements table already has progress info
+      const transformedAchievements = achievementsData?.map((achievement) => ({
+        id: achievement.id,
+        name: achievement.title,
+        description: achievement.description,
+        target_value: achievement.points_earned, // Using points_earned as target for now
+        achievement_type: achievement.category,
+        points_reward: achievement.points_earned,
+        user_achievement: {
+          progress: achievement.points_earned,
+          completed: true, // All entries in achievements table are completed
+          completed_at: achievement.achievement_date,
+        }
       }))
 
       setAchievements(transformedAchievements || [])
 
-      // Load user stats
+      // Load user stats from profiles table
       const { data: statsData, error: statsError } = await supabase
-        .from("user_points")
+        .from("profiles")
         .select("*")
-        .eq("user_id", userId)
+        .eq("id", userId)
         .single()
 
       if (statsError && statsError.code !== "PGRST116") throw statsError
 
       if (statsData) {
         setUserStats({
-          level: statsData.level,
-          points: statsData.points,
-          total_earned_points: statsData.total_earned_points,
-          streak_days: statsData.streak_days,
-          next_level_points: statsData.level * 500, // Simple level calculation
+          level: statsData.current_level,
+          points: statsData.total_points,
+          total_earned_points: statsData.total_points,
+          streak_days: statsData.current_streak,
+          next_level_points: statsData.current_level * 500, // Simple level calculation
         })
       } else {
         // Default stats if no record exists

@@ -60,8 +60,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center p-6">
+      {/* Gradient overlay, matching landing page */}
+      <div className="absolute inset-0 pointer-events-none [mask-image:linear-gradient(to_bottom,rgba(0,0,0,.9),rgba(0,0,0,.4),transparent)] z-0">
+        <div className="absolute inset-0 bg-[radial-gradient(at_20%_25%,rgba(110,200,60,0.25),transparent_60%),radial-gradient(at_80%_70%,rgba(80,160,70,0.22),transparent_65%)] dark:bg-[radial-gradient(at_25%_30%,rgba(110,200,60,0.15),transparent_60%),radial-gradient(at_75%_70%,rgba(80,160,70,0.15),transparent_65%)]" />
+      </div>
+      <div className="relative w-full max-w-md z-10">
         <div className="flex flex-col gap-6">
           {/* Logo and Header */}
           <div className="text-center">

@@ -61,9 +61,9 @@ export default async function HomePage() {
                 <Link href="#features"><Button size="lg" variant="outline" className="px-8">Explore Features</Button></Link>
               </div>
               <div className="mt-10 grid grid-cols-3 gap-6 max-w-md text-center">
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">50k+</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Actions Logged</p></div>
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">2.3t</p><p className="text-xs uppercase text-muted-foreground tracking-wide">CO2e Reduced</p></div>
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">92%</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Goal Adherence</p></div>
+                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Track</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Daily Activities</p></div>
+                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Reduce</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Carbon Impact</p></div>
+                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Earn</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Green Rewards</p></div>
               </div>
             </div>
             <div className="w-full lg:w-[54%] flex justify-center lg:justify-end self-stretch items-center">
@@ -84,12 +84,12 @@ export default async function HomePage() {
                     <p className="text-lg font-semibold mt-1">Level 3</p>
                     <div className="mt-4 flex items-end justify-between">
                       <div className="flex flex-col">
-                        <span className="text-2xl font-bold leading-none tracking-tight">127</span>
-                        <span className="text-[11px] font-medium mt-1 opacity-90">actions</span>
+                        <span className="text-2xl font-bold leading-none tracking-tight">Start</span>
+                        <span className="text-[11px] font-medium mt-1 opacity-90">tracking</span>
                       </div>
                       <div className="text-right text-[11px] leading-tight opacity-95">
-                        <p>This month</p>
-                        <p>+18% vs last</p>
+                        <p>Your journey</p>
+                        <p>begins today</p>
                       </div>
                     </div>
                   </div>

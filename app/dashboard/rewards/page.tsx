@@ -22,21 +22,16 @@ import { toast } from "@/hooks/use-toast"
 
 interface Reward {
   id: string
-  name: string
+  title: string
   description: string
   category: string
   points_cost: number
-  monetary_value: number
-  currency: string
   stock_quantity: number | null
-  unlimited_stock: boolean
   image_url: string | null
   partner_name: string | null
-  partner_logo_url: string | null
   terms_conditions: string | null
-  expiry_days: number
+  expiry_date: string | null
   is_active: boolean
-  featured: boolean
 }
 
 interface RewardRedemption {
@@ -116,7 +111,6 @@ export default function RewardsPage() {
         .from("rewards")
         .select("*")
         .eq("is_active", true)
-        .order("featured", { ascending: false })
         .order("points_cost", { ascending: true })
 
       if (rewardsError) throw rewardsError
@@ -146,15 +140,18 @@ export default function RewardsPage() {
 
       // Load user stats
       const { data: statsData, error: statsError } = await supabase
-        .from("user_points")
-        .select("points, level")
-        .eq("user_id", userId)
+        .from("profiles")
+        .select("total_points, current_level")
+        .eq("id", userId)
         .single()
 
       if (statsError && statsError.code !== "PGRST116") throw statsError
 
       setUserStats(
-        statsData || {
+        statsData ? {
+          points: statsData.total_points,
+          level: statsData.current_level,
+        } : {
           points: 0,
           level: 1,
         },
@@ -179,9 +176,13 @@ export default function RewardsPage() {
       // Generate redemption code
       const redemptionCode = `TG-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-      // Calculate expiry date
+      // Calculate expiry date (default to 30 days if no expiry_date specified)
       const expiryDate = new Date()
-      expiryDate.setDate(expiryDate.getDate() + reward.expiry_days)
+      if (reward.expiry_date) {
+        expiryDate.setTime(new Date(reward.expiry_date).getTime())
+      } else {
+        expiryDate.setDate(expiryDate.getDate() + 30) // Default 30 days
+      }
 
       // Create redemption record
       const { error: redemptionError } = await supabase.from("reward_redemptions").insert({
@@ -197,17 +198,17 @@ export default function RewardsPage() {
 
       // Update user points
       const { error: pointsError } = await supabase
-        .from("user_points")
+        .from("profiles")
         .update({
-          points: userStats.points - reward.points_cost,
+          total_points: userStats.points - reward.points_cost,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", user.id)
+        .eq("id", user.id)
 
       if (pointsError) throw pointsError
 
-      // Update stock if not unlimited
-      if (!reward.unlimited_stock && reward.stock_quantity !== null) {
+      // Update stock if available
+      if (reward.stock_quantity !== null && reward.stock_quantity > 0) {
         const { error: stockError } = await supabase
           .from("rewards")
           .update({
@@ -221,7 +222,7 @@ export default function RewardsPage() {
 
       toast({
         title: "Reward Redeemed!",
-        description: `You've successfully redeemed ${reward.name}. Check your redemptions for details.`,
+        description: `You've successfully redeemed ${reward.title}. Check your redemptions for details.`,
       })
 
       // Refresh data
@@ -313,11 +314,10 @@ export default function RewardsPage() {
               {filteredRewards.map((reward) => {
                 const IconComponent = categoryIcons[reward.category as keyof typeof categoryIcons] || Gift
                 const canAfford = userStats.points >= reward.points_cost
-                const inStock = reward.unlimited_stock || (reward.stock_quantity && reward.stock_quantity > 0)
+                const inStock = (reward.stock_quantity === null || reward.stock_quantity > 0)
 
                 return (
-                  <Card key={reward.id} className={`relative ${reward.featured ? "ring-2 ring-primary" : ""}`}>
-                    {reward.featured && <Badge className="absolute -top-2 -right-2 bg-primary">Featured</Badge>}
+                  <Card key={reward.id} className="relative">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ export default function RewardsPage() {
                             <IconComponent className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg">{reward.name}</CardTitle>
+                            <CardTitle className="text-lg">{reward.title}</CardTitle>
                             {reward.partner_name && (
                               <p className="text-sm text-muted-foreground">by {reward.partner_name}</p>
                             )}
@@ -339,9 +339,6 @@ export default function RewardsPage() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-primary">{reward.points_cost} pts</span>
-                          {reward.monetary_value > 0 && (
-                            <span className="text-sm text-muted-foreground">Worth ₹{reward.monetary_value}</span>
-                          )}
                         </div>
 
                         {!inStock && (
@@ -362,21 +359,25 @@ export default function RewardsPage() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Redeem {selectedReward?.name}</DialogTitle>
+                              <DialogTitle>Redeem {selectedReward?.title}</DialogTitle>
                               <DialogDescription>
                                 Are you sure you want to redeem this reward for {selectedReward?.points_cost} points?
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div className="p-4 rounded-lg border">
-                                <h4 className="font-medium mb-2">{selectedReward?.name}</h4>
+                                <h4 className="font-medium mb-2">{selectedReward?.title}</h4>
                                 <p className="text-sm text-muted-foreground mb-3">{selectedReward?.description}</p>
                                 <div className="flex items-center justify-between">
                                   <span className="text-lg font-bold text-primary">
                                     {selectedReward?.points_cost} points
                                   </span>
                                   <span className="text-sm text-muted-foreground">
-                                    Expires in {selectedReward?.expiry_days} days
+                                  {selectedReward?.expiry_date ? (
+                                    `Expires on ${new Date(selectedReward.expiry_date).toLocaleDateString()}`
+                                  ) : (
+                                    "No expiry date"
+                                  )}
                                   </span>
                                 </div>
                               </div>
@@ -434,7 +435,7 @@ export default function RewardsPage() {
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center justify-between mb-1">
-                              <h3 className="font-medium">{redemption.reward.name}</h3>
+                              <h3 className="font-medium">{redemption.reward.title}</h3>
                               <Badge
                                 variant="secondary"
                                 className={statusColors[redemption.status as keyof typeof statusColors]}

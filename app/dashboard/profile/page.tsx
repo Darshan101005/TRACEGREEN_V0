@@ -344,10 +344,24 @@ export default function ProfilePage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-cyan-600 bg-clip-text text-transparent">
-            Profile & Settings
-          </h1>
-          <p className="text-muted-foreground mt-2">Manage your account and sustainability preferences</p>
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar className="w-16 h-16 ring-4 ring-green-100">
+              <AvatarImage src={profile?.avatar_url || ""} alt="Profile" />
+              <AvatarFallback className="text-xl bg-gradient-to-br from-green-400 to-cyan-400 text-white font-semibold">
+                {userInitials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-cyan-600 bg-clip-text text-transparent">
+                {profile?.full_name || user?.email || 'User Profile'}
+              </h1>
+              <p className="text-muted-foreground">
+                {profile?.email || user?.email}
+                {profile?.is_admin && <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">Admin</span>}
+              </p>
+            </div>
+          </div>
+          <p className="text-muted-foreground">Manage your account and sustainability preferences</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
