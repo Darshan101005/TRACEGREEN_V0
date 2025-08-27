@@ -20,10 +20,10 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(at_20%_25%,rgba(110,200,60,0.25),transparent_60%),radial-gradient(at_80%_70%,rgba(80,160,70,0.22),transparent_65%)] dark:bg-[radial-gradient(at_25%_30%,rgba(110,200,60,0.15),transparent_60%),radial-gradient(at_75%_70%,rgba(80,160,70,0.15),transparent_65%)]" />
       </div>
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b">
-        <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/images/trace-green-logo.png" alt="Trace Green" width={36} height={36} className="rounded-md" />
-            <span className="text-xl font-semibold tracking-tight">Trace Green</span>
+            <Image src="/images/trace-green-logo.png" alt="Trace Green" width={32} height={32} className="rounded-md sm:w-9 sm:h-9" />
+            <span className="text-lg sm:text-xl font-semibold tracking-tight">Trace Green</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
             <Link href="#features" className="px-3 py-2 rounded-md text-foreground/70 hover:text-foreground hover:bg-muted/60 transition">Features</Link>
@@ -37,94 +37,103 @@ export default async function HomePage() {
           </nav>
           <div className="md:hidden">
             <Link href="/auth/sign-up">
-              <Button size="sm" variant="brand" className="h-8 px-4">Join</Button>
+              <Button size="sm" variant="brand" className="h-8 px-3 text-sm">Join</Button>
             </Link>
           </div>
         </div>
       </header>
       <main className="flex-1">
         <section className="relative min-h-[calc(100vh-4rem)] flex items-stretch">
-          <div className="mx-auto max-w-7xl px-6 py-16 lg:py-12 flex flex-col lg:flex-row gap-16 xl:gap-24 items-center w-full">
-            <div className="w-full lg:w-[46%] flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1 text-xs font-medium ring-1 ring-border mb-6">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-16 lg:py-12 flex flex-col lg:flex-row gap-8 lg:gap-16 xl:gap-24 items-center w-full">
+            <div className="w-full lg:w-[46%] flex flex-col justify-center text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 rounded-full bg-muted/70 px-3 py-1 text-xs font-medium ring-1 ring-border mb-4 sm:mb-6 mx-auto lg:mx-0 w-fit">
                 <span className="h-2 w-2 rounded-full bg-gradient-to-r from-primary to-accent animate-pulse" />
                 Accelerate personal climate action
               </div>
-              <h1 className="text-4xl sm:text-5xl font-semibold leading-tight tracking-tight mb-6">
-                Measure today. Transform tomorrow.
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight tracking-tight mb-4 sm:mb-6">
+                Measure today.<br />Transform tomorrow.
               </h1>
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-xl">
+              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0">
                 A precision platform to quantify, understand and reduce your daily carbon footprint while earning real rewards and joining a mission driven community.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/auth/sign-up"><Button size="lg" variant="brand" className="px-8">Start Free</Button></Link>
-                <Link href="#features"><Button size="lg" variant="outline" className="px-8">Explore Features</Button></Link>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+                <Link href="/auth/sign-up"><Button size="lg" variant="brand" className="px-6 sm:px-8">Start Free</Button></Link>
+                <Link href="#features"><Button size="lg" variant="outline" className="px-6 sm:px-8">Explore Features</Button></Link>
               </div>
-              <div className="mt-10 grid grid-cols-3 gap-6 max-w-md text-center">
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Track</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Daily Activities</p></div>
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Reduce</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Carbon Impact</p></div>
-                <div className="space-y-1"><p className="text-2xl font-semibold tracking-tight">Earn</p><p className="text-xs uppercase text-muted-foreground tracking-wide">Green Rewards</p></div>
+              <div className="mt-8 sm:mt-10 grid grid-cols-3 gap-4 sm:gap-6 max-w-md mx-auto lg:mx-0 text-center">
+                <div className="space-y-1">
+                  <p className="text-xl sm:text-2xl font-semibold tracking-tight">Track</p>
+                  <p className="text-xs uppercase text-muted-foreground tracking-wide">Daily Activities</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xl sm:text-2xl font-semibold tracking-tight">Reduce</p>
+                  <p className="text-xs uppercase text-muted-foreground tracking-wide">Carbon Impact</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xl sm:text-2xl font-semibold tracking-tight">Earn</p>
+                  <p className="text-xs uppercase text-muted-foreground tracking-wide">Green Rewards</p>
+                </div>
               </div>
             </div>
             <div className="w-full lg:w-[54%] flex justify-center lg:justify-end self-stretch items-center">
-              <div className="relative w-[min(340px,42vw)] aspect-[9/19] max-h-[calc(100vh-8rem)] rounded-[2.1rem] border border-border/70 shadow-[0_10px_35px_-10px_rgba(0,0,0,0.35)] bg-background/95 backdrop-blur-xl overflow-hidden ring-1 ring-primary/10">
+              <div className="relative w-[min(280px,75vw)] sm:w-[min(320px,55vw)] lg:w-[min(340px,42vw)] aspect-[9/19] min-h-[600px] max-h-[calc(100vh-10rem)] sm:max-h-[calc(100vh-8rem)] rounded-[2.1rem] border border-border/70 shadow-[0_10px_35px_-10px_rgba(0,0,0,0.35)] bg-background/95 backdrop-blur-xl overflow-hidden ring-1 ring-primary/10">
                 <div className="absolute inset-0 bg-[radial-gradient(at_80%_15%,rgba(110,200,90,0.18),transparent_60%),radial-gradient(at_20%_85%,rgba(90,170,90,0.15),transparent_60%)]" />
-                <div className="absolute top-0 left-0 right-0 h-7 flex items-center justify-center"><div className="h-1.5 w-24 rounded-full bg-foreground/10" /></div>
-                <div className="relative h-full flex flex-col pt-9 pb-5 px-5 gap-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center text-[11px] font-medium">TG</div>
+                <div className="absolute top-0 left-0 right-0 h-6 sm:h-7 flex items-center justify-center"><div className="h-1 sm:h-1.5 w-20 sm:w-24 rounded-full bg-foreground/10" /></div>
+                <div className="relative h-full flex flex-col pt-7 sm:pt-9 pb-4 sm:pb-5 px-4 sm:px-5 gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="h-8 sm:h-10 w-8 sm:w-10 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center text-[10px] sm:text-[11px] font-medium">TG</div>
                     <div className="flex flex-col leading-tight">
-                      <p className="text-sm font-semibold">Good Morning!</p>
-                      <p className="text-xs text-muted-foreground">Ready to lower impact?</p>
+                      <p className="text-xs sm:text-sm font-semibold">Good Morning!</p>
+                      <p className="text-[11px] sm:text-xs text-muted-foreground">Ready to lower impact?</p>
                     </div>
                   </div>
-                  <div className="rounded-2xl p-4 bg-[linear-gradient(125deg,var(--primary),var(--accent))] text-primary-foreground relative overflow-hidden shadow-sm">
+                  <div className="rounded-xl sm:rounded-2xl p-3 sm:p-4 bg-[linear-gradient(125deg,var(--primary),var(--accent))] text-primary-foreground relative overflow-hidden shadow-sm flex-shrink-0">
                     <div className="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.9),transparent_60%)]" />
-                    <p className="text-xs font-medium tracking-wide">Carbon Progress</p>
-                    <p className="text-lg font-semibold mt-1">Level 3</p>
-                    <div className="mt-4 flex items-end justify-between">
+                    <p className="text-[10px] sm:text-xs font-medium tracking-wide">Carbon Progress</p>
+                    <p className="text-base sm:text-lg font-semibold mt-1">Level 3</p>
+                    <div className="mt-3 sm:mt-4 flex items-end justify-between">
                       <div className="flex flex-col">
-                        <span className="text-2xl font-bold leading-none tracking-tight">Start</span>
-                        <span className="text-[11px] font-medium mt-1 opacity-90">tracking</span>
+                        <span className="text-xl sm:text-2xl font-bold leading-none tracking-tight">Start</span>
+                        <span className="text-[10px] sm:text-[11px] font-medium mt-1 opacity-90">tracking</span>
                       </div>
-                      <div className="text-right text-[11px] leading-tight opacity-95">
+                      <div className="text-right text-[10px] sm:text-[11px] leading-tight opacity-95">
                         <p>Your journey</p>
                         <p>begins today</p>
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button className="h-28 rounded-xl bg-white/70 dark:bg-white/5 ring-1 ring-border/60 flex flex-col items-center justify-center gap-3 text-sm font-medium shadow-sm backdrop-blur-sm transition active:scale-[.98]">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/20 flex items-center justify-center"><Leaf className="w-4 h-4 text-primary"/></div>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 flex-shrink-0">
+                    <button className="h-24 sm:h-28 rounded-xl bg-white/70 dark:bg-white/5 ring-1 ring-border/60 flex flex-col items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium shadow-sm backdrop-blur-sm transition active:scale-[.98]">
+                      <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/20 flex items-center justify-center"><Leaf className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary"/></div>
                       Track Now
                     </button>
-                    <button className="h-28 rounded-xl bg-white/70 dark:bg-white/5 ring-1 ring-border/60 flex flex-col items-center justify-center gap-3 text-sm font-medium shadow-sm backdrop-blur-sm transition active:scale-[.98]">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/20 flex items-center justify-center"><Target className="w-4 h-4 text-primary"/></div>
+                    <button className="h-24 sm:h-28 rounded-xl bg-white/70 dark:bg-white/5 ring-1 ring-border/60 flex flex-col items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium shadow-sm backdrop-blur-sm transition active:scale-[.98]">
+                      <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-full bg-gradient-to-br from-primary/15 to-accent/20 flex items-center justify-center"><Target className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary"/></div>
                       Set Goal
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    <div className="text-xs font-medium text-muted-foreground tracking-wide px-1">Recent Activity</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-xl ring-1 ring-border/60 bg-white/70 dark:bg-white/5 px-3 py-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center"><Leaf className="w-4 h-4 text-primary"/></div>
-                        <div className="flex-1">
-                          <p className="text-sm leading-tight">Cycling Commute</p>
-                          <p className="text-[11px] text-muted-foreground">2 hours ago</p>
+                  <div className="space-y-2 sm:space-y-3 flex-1 min-h-0">
+                    <div className="text-[10px] sm:text-xs font-medium text-muted-foreground tracking-wide px-1">Recent Activity</div>
+                    <div className="space-y-1.5 sm:space-y-2 overflow-y-auto">
+                      <div className="flex items-center gap-2 sm:gap-3 rounded-xl ring-1 ring-border/60 bg-white/70 dark:bg-white/5 px-2.5 sm:px-3 py-2.5 sm:py-3">
+                        <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center flex-shrink-0"><Leaf className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary"/></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm leading-tight truncate">Cycling Commute</p>
+                          <p className="text-[10px] sm:text-[11px] text-muted-foreground">2 hours ago</p>
                         </div>
-                        <span className="text-[11px] px-2 py-1 rounded-full bg-primary/15 text-primary">Excellent</span>
+                        <span className="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-primary/15 text-primary flex-shrink-0">Excellent</span>
                       </div>
-                      <div className="flex items-center gap-3 rounded-xl ring-1 ring-border/60 bg-white/70 dark:bg-white/5 px-3 py-3">
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center"><Target className="w-4 h-4 text-primary"/></div>
-                        <div className="flex-1">
-                          <p className="text-sm leading-tight">Plant-Based Meal</p>
-                          <p className="text-[11px] text-muted-foreground">1 day ago</p>
+                      <div className="flex items-center gap-2 sm:gap-3 rounded-xl ring-1 ring-border/60 bg-white/70 dark:bg-white/5 px-2.5 sm:px-3 py-2.5 sm:py-3">
+                        <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-full bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center flex-shrink-0"><Target className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-primary"/></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm leading-tight truncate">Plant-Based Meal</p>
+                          <p className="text-[10px] sm:text-[11px] text-muted-foreground">1 day ago</p>
                         </div>
-                        <span className="text-[11px] px-2 py-1 rounded-full bg-accent/15 text-foreground/80">Good</span>
+                        <span className="text-[9px] sm:text-[11px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-accent/15 text-foreground/80 flex-shrink-0">Good</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] pt-1 mt-auto">
+                  <div className="flex items-center justify-between text-[10px] sm:text-[11px] pt-1 mt-auto flex-shrink-0 border-t border-border/30">
                     <span className="text-foreground font-medium">Home</span>
                     <span className="text-muted-foreground">Track</span>
                     <span className="text-muted-foreground">Rewards</span>
