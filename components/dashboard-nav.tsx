@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { CompactStreak } from "@/components/compact-streak"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,6 +28,13 @@ interface DashboardNavProps {
       avatar_url?: string
     }
   } | null // Allow user to be null
+  streakData?: {
+    currentStreak: number
+    longestStreak: number
+    todayCompleted: boolean
+    weeklyProgress: number
+    totalActiveDays: number
+  }
 }
 
 const navigation = [
@@ -39,7 +47,7 @@ const navigation = [
   { name: "Learn", href: "/dashboard/learn", icon: BookOpen },
 ]
 
-export function DashboardNav({ user }: DashboardNavProps) {
+export function DashboardNav({ user, streakData }: DashboardNavProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -182,7 +190,12 @@ export function DashboardNav({ user }: DashboardNavProps) {
           </div>
 
           {/* User Menu */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:items-center gap-4">
+            {/* Streak Component */}
+            {streakData && (
+              <CompactStreak streakData={streakData} />
+            )}
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">

@@ -17,6 +17,9 @@ interface UserStats {
   totalPoints: number
   level: number
   streak: number
+  longestStreak: number
+  todayCompleted: boolean
+  weeklyActiveDays: number
   todaysCarbon: number
   weeklyCarbon: number
   monthlyCarbon: number
@@ -126,18 +129,21 @@ export default function DashboardContent() {
       // Get user profile for additional stats
       const { data: profile } = await supabase
         .from('profiles')
-        .select('total_points, level, current_streak, monthly_goal')
+        .select('total_points, current_level, current_streak, longest_streak, carbon_goal_monthly')
         .eq('id', userId)
         .single()
       
       setUserStats({
         totalPoints: profile?.total_points || 0,
-        level: profile?.level || 1,
+        level: profile?.current_level || 1,
         streak: profile?.current_streak || 0,
+        longestStreak: profile?.longest_streak || 0,
+        todayCompleted: todaysCarbon > 0, // Check if user logged activity today
+        weeklyActiveDays: Math.min(Math.floor(weeklyCarbon / 10), 7), // Estimate based on carbon data
         todaysCarbon,
         weeklyCarbon,
         monthlyCarbon,
-        monthlyGoal: profile?.monthly_goal || 500,
+        monthlyGoal: profile?.carbon_goal_monthly || 500,
         activitiesCount: activitiesCount || 0,
         badgesCount: badgesCount || 0,
         achievementsCount: achievementsCount || 0
@@ -184,7 +190,16 @@ export default function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardNav user={user} />
+      <DashboardNav 
+        user={user} 
+        streakData={{
+          currentStreak: userStats.streak,
+          longestStreak: userStats.longestStreak,
+          todayCompleted: userStats.todayCompleted,
+          weeklyProgress: userStats.weeklyActiveDays,
+          totalActiveDays: userStats.activitiesCount
+        }}
+      />
       
       <div className="container mx-auto px-4 py-6 space-y-6 max-w-7xl">
         {showSuccess && (
