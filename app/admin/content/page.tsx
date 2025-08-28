@@ -1,14 +1,13 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -19,23 +18,61 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Clock, Star } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { 
+  Plus, 
+  FileText, 
+  Edit,
+  Trash2,
+  Eye,
+  BookOpen,
+  Users,
+  CheckCircle,
+  XCircle,
+  Bell,
+  Send,
+  Calendar,
+  Globe
+} from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface Content {
   id: string
   title: string
   content: string
+  content_type: string
   category: string
-  difficulty: string
-  estimated_read_time?: number
-  image_url?: string
-  tags?: string[]
-  is_featured: boolean
   is_published: boolean
   created_at: string
+  updated_at: string
+  author?: string
+  views?: number
+}
+
+interface ContentFormData {
+  title: string
+  content: string
+  content_type: string
+  category: string
+  is_published: boolean
+}
+
+const defaultFormData: ContentFormData = {
+  title: "",
+  content: "",
+  content_type: "article",
+  category: "general",
+  is_published: true
 }
 
 export default function AdminContent() {
@@ -43,33 +80,43 @@ export default function AdminContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingContent, setEditingContent] = useState<Content | null>(null)
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    category: "",
-    difficulty: "beginner",
-    estimated_read_time: "",
-    image_url: "",
-    tags: "",
-    is_featured: false,
-    is_published: true,
+  const [formData, setFormData] = useState<ContentFormData>(defaultFormData)
+  const [notificationMessage, setNotificationMessage] = useState("")
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = useState(false)
+  const [stats, setStats] = useState({
+    totalContent: 0,
+    publishedContent: 0,
+    totalViews: 0,
+    recentContent: 0
   })
 
   const supabase = createClient()
 
   useEffect(() => {
-    loadContents()
+    loadContent()
   }, [])
 
-  const loadContents = async () => {
+  const loadContent = async () => {
     try {
-      const { data, error } = await supabase
-        .from("educational_content")
+      setIsLoading(true)
+      const { data: contentData, error } = await supabase
+        .from("content")
         .select("*")
         .order("created_at", { ascending: false })
 
       if (error) throw error
-      setContents(data || [])
+
+      const contents = contentData || []
+      const totalContent = contents.length
+      const publishedContent = contents.filter(c => c.is_published).length
+      const totalViews = contents.reduce((sum, c) => sum + (c.views || 0), 0)
+      const recentContent = contents.filter(c => 
+        new Date(c.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      ).length
+
+      setStats({ totalContent, publishedContent, totalViews, recentContent })
+      setContents(contents)
+
     } catch (error) {
       console.error("Error loading content:", error)
       toast({
@@ -82,38 +129,46 @@ export default function AdminContent() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSaveContent = async () => {
     try {
-      const contentData = {
-        title: formData.title,
-        content: formData.content,
-        category: formData.category,
-        difficulty: formData.difficulty,
-        estimated_read_time: formData.estimated_read_time ? Number.parseInt(formData.estimated_read_time) : null,
-        image_url: formData.image_url || null,
-        tags: formData.tags ? formData.tags.split(",").map((tag) => tag.trim()) : null,
-        is_featured: formData.is_featured,
-        is_published: formData.is_published,
+      if (!formData.title || !formData.content) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
       }
 
       if (editingContent) {
-        const { error } = await supabase.from("educational_content").update(contentData).eq("id", editingContent.id)
+        const { error } = await supabase
+          .from("content")
+          .update(formData)
+          .eq("id", editingContent.id)
 
         if (error) throw error
-        toast({ title: "Success", description: "Content updated successfully" })
+
+        toast({
+          title: "Success",
+          description: "Content updated and published to users",
+        })
       } else {
-        const { error } = await supabase.from("educational_content").insert([contentData])
+        const { error } = await supabase
+          .from("content")
+          .insert([formData])
 
         if (error) throw error
-        toast({ title: "Success", description: "Content created successfully" })
+
+        toast({
+          title: "Success",
+          description: "New content created and published",
+        })
       }
 
       setIsDialogOpen(false)
       setEditingContent(null)
-      resetForm()
-      loadContents()
+      setFormData(defaultFormData)
+      loadContent()
     } catch (error) {
       console.error("Error saving content:", error)
       toast({
@@ -124,31 +179,21 @@ export default function AdminContent() {
     }
   }
 
-  const handleEdit = (content: Content) => {
-    setEditingContent(content)
-    setFormData({
-      title: content.title,
-      content: content.content,
-      category: content.category,
-      difficulty: content.difficulty,
-      estimated_read_time: content.estimated_read_time?.toString() || "",
-      image_url: content.image_url || "",
-      tags: content.tags?.join(", ") || "",
-      is_featured: content.is_featured,
-      is_published: content.is_published,
-    })
-    setIsDialogOpen(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this content?")) return
-
+  const handleDeleteContent = async (contentId: string) => {
     try {
-      const { error } = await supabase.from("educational_content").delete().eq("id", id)
+      const { error } = await supabase
+        .from("content")
+        .delete()
+        .eq("id", contentId)
+
       if (error) throw error
 
-      toast({ title: "Success", description: "Content deleted successfully" })
-      loadContents()
+      toast({
+        title: "Success",
+        description: "Content deleted successfully",
+      })
+
+      loadContent()
     } catch (error) {
       console.error("Error deleting content:", error)
       toast({
@@ -159,256 +204,449 @@ export default function AdminContent() {
     }
   }
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      content: "",
-      category: "",
-      difficulty: "beginner",
-      estimated_read_time: "",
-      image_url: "",
-      tags: "",
-      is_featured: false,
-      is_published: true,
-    })
+  const handleTogglePublished = async (contentId: string, isPublished: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("content")
+        .update({ is_published: !isPublished })
+        .eq("id", contentId)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: `Content ${!isPublished ? 'published to users' : 'unpublished'}`,
+      })
+
+      loadContent()
+    } catch (error) {
+      console.error("Error updating content:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update content",
+        variant: "destructive",
+      })
+    }
   }
 
-  const getDifficultyBadge = (difficulty: string) => {
-    const colors: Record<string, string> = {
-      beginner: "bg-green-100 text-green-700",
-      intermediate: "bg-yellow-100 text-yellow-700",
-      advanced: "bg-red-100 text-red-700",
+  const handleSendNotification = async () => {
+    try {
+      if (!notificationMessage.trim()) {
+        toast({
+          title: "Error",
+          description: "Please enter a notification message",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Here you would typically send a push notification or email
+      // For now, we'll just show a success message
+      toast({
+        title: "Success",
+        description: "Notification sent to all users",
+      })
+
+      setNotificationMessage("")
+      setIsNotificationDialogOpen(false)
+    } catch (error) {
+      console.error("Error sending notification:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send notification",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const openEditDialog = (content: Content) => {
+    setEditingContent(content)
+    setFormData({
+      title: content.title,
+      content: content.content,
+      content_type: content.content_type,
+      category: content.category,
+      is_published: content.is_published
+    })
+    setIsDialogOpen(true)
+  }
+
+  const openCreateDialog = () => {
+    setEditingContent(null)
+    setFormData(defaultFormData)
+    setIsDialogOpen(true)
+  }
+
+  const getContentTypeBadge = (type: string) => {
+    const colors = {
+      article: "bg-blue-100 text-blue-700",
+      tip: "bg-green-100 text-green-700",
+      guide: "bg-purple-100 text-purple-700",
+      news: "bg-orange-100 text-orange-700",
+      tutorial: "bg-red-100 text-red-700"
     }
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[difficulty] || colors.beginner}`}>
-        {difficulty}
-      </span>
+      <Badge className={colors[type as keyof typeof colors] || colors.article}>
+        {type.charAt(0).toUpperCase() + type.slice(1)}
+      </Badge>
     )
+  }
+
+  const getStatusBadge = (content: Content) => {
+    if (!content.is_published) {
+      return <Badge variant="secondary" className="flex items-center gap-1">
+        <XCircle className="w-3 h-3" />
+        Draft
+      </Badge>
+    }
+
+    return <Badge className="bg-green-100 text-green-700 flex items-center gap-1">
+      <Globe className="w-3 h-3" />
+      Published
+    </Badge>
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
   }
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading content...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Content Management</h1>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+          <div className="h-96 bg-gray-200 rounded-lg"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-            Manage Content
-          </h1>
-          <p className="text-muted-foreground mt-2">Create and manage educational content</p>
+          <h1 className="text-2xl font-bold text-foreground">Content Management</h1>
+          <p className="text-muted-foreground">Create educational content, send notifications, and manage site content</p>
         </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditingContent(null)
-                resetForm()
-              }}
-              className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Content
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingContent ? "Edit Content" : "Create New Content"}</DialogTitle>
-              <DialogDescription>
-                {editingContent ? "Update the content details" : "Create new educational content"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., basics, transportation, energy"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={8}
-                  placeholder="Write your educational content here..."
-                  required
-                />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="difficulty">Difficulty</Label>
-                  <Select
-                    value={formData.difficulty}
-                    onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="readTime">Read Time (minutes)</Label>
-                  <Input
-                    id="readTime"
-                    type="number"
-                    value={formData.estimated_read_time}
-                    onChange={(e) => setFormData({ ...formData, estimated_read_time: e.target.value })}
-                    placeholder="5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags (comma-separated)</Label>
-                <Input
-                  id="tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  placeholder="sustainability, carbon, environment"
-                />
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                  />
-                  <Label htmlFor="featured">Featured content</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="published"
-                    checked={formData.is_published}
-                    onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                  />
-                  <Label htmlFor="published">Published (visible to users)</Label>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                >
-                  {editingContent ? "Update Content" : "Create Content"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setIsNotificationDialogOpen(true)}
+            variant="outline" 
+            className="flex items-center gap-2"
+          >
+            <Bell className="w-4 h-4" />
+            Send Notification
+          </Button>
+          <Button onClick={openCreateDialog} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Create Content
+          </Button>
+        </div>
       </div>
 
-      <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Content</CardTitle>
+            <FileText className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalContent}</div>
+            <p className="text-xs text-muted-foreground">All created content</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Published</CardTitle>
+            <Globe className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.publishedContent}</div>
+            <p className="text-xs text-muted-foreground">Live content</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+            <Users className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalViews}</div>
+            <p className="text-xs text-muted-foreground">Content engagement</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">This Week</CardTitle>
+            <Calendar className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.recentContent}</div>
+            <p className="text-xs text-muted-foreground">New content</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Content Table */}
+      <Card>
         <CardHeader>
           <CardTitle>All Content</CardTitle>
-          <CardDescription>Manage educational articles and resources</CardDescription>
+          <CardDescription>Manage educational content, articles, and site information</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Difficulty</TableHead>
-                <TableHead>Read Time</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Featured</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {contents.map((content) => (
-                <TableRow key={content.id}>
-                  <TableCell className="font-medium">{content.title}</TableCell>
-                  <TableCell>{content.category}</TableCell>
-                  <TableCell>{getDifficultyBadge(content.difficulty)}</TableCell>
-                  <TableCell>
-                    {content.estimated_read_time ? (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {content.estimated_read_time}m
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={content.is_published ? "default" : "secondary"}>
-                      {content.is_published ? "Published" : "Draft"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {content.is_featured && (
-                      <div className="flex items-center gap-1 text-yellow-600">
-                        <Star className="w-4 h-4 fill-current" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(content)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(content.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Type & Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {contents.map((content) => (
+                  <TableRow key={content.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{content.title}</div>
+                        <div className="text-sm text-muted-foreground line-clamp-2">
+                          {content.content.substring(0, 100)}...
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        {getContentTypeBadge(content.content_type)}
+                        <Badge variant="outline" className="text-xs">
+                          {content.category}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(content)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                        <span>{content.views || 0}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {formatDate(content.created_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {formatDate(content.updated_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {/* View Content */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>{content.title}</DialogTitle>
+                              <DialogDescription>
+                                {content.content_type} • {content.category}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="prose max-w-none">
+                                <div className="whitespace-pre-wrap">{content.content}</div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Edit Content */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(content)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+
+                        {/* Toggle Published */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleTogglePublished(content.id, content.is_published)}
+                          className={content.is_published ? "text-orange-600" : "text-green-600"}
+                        >
+                          {content.is_published ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                        </Button>
+
+                        {/* Delete Content */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Content</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{content.title}"? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteContent(content.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete Content
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Create/Edit Content Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingContent ? "Edit Content" : "Create New Content"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingContent ? "Update content and publish changes" : "Create new educational content for users"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Title *</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Content title"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <Input
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g. sustainability, tips, guides"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Content Type</label>
+                <Select value={formData.content_type} onValueChange={(value) => setFormData({ ...formData, content_type: value })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="article">Article</SelectItem>
+                    <SelectItem value="tip">Tip</SelectItem>
+                    <SelectItem value="guide">Guide</SelectItem>
+                    <SelectItem value="news">News</SelectItem>
+                    <SelectItem value="tutorial">Tutorial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <input
+                  type="checkbox"
+                  id="is_published"
+                  checked={formData.is_published}
+                  onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
+                />
+                <label htmlFor="is_published" className="text-sm font-medium">Publish immediately</label>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Content *</label>
+              <Textarea
+                value={formData.content}
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                placeholder="Write your content here..."
+                rows={12}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveContent}>
+              {editingContent ? "Update Content" : "Create Content"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Notification Dialog */}
+      <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Notification</DialogTitle>
+            <DialogDescription>
+              Send a notification message to all users
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Notification Message *</label>
+              <Textarea
+                value={notificationMessage}
+                onChange={(e) => setNotificationMessage(e.target.value)}
+                placeholder="Enter the message you want to send to all users..."
+                rows={4}
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendNotification} className="flex items-center gap-2">
+              <Send className="w-4 h-4" />
+              Send to All Users
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

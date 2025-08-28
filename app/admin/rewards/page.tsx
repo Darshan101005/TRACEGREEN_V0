@@ -1,14 +1,14 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -18,9 +18,34 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Package, Calendar } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { 
+  Plus, 
+  Package, 
+  Gift, 
+  Edit,
+  Trash2,
+  Eye,
+  Trophy,
+  Users,
+  CheckCircle,
+  XCircle,
+  Star,
+  Calendar,
+  ShoppingCart,
+  Play,
+  Pause
+} from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface Reward {
@@ -30,6 +55,7 @@ interface Reward {
   category: string
   points_cost: number
   stock_quantity?: number
+  redeemed_count?: number
   image_url?: string
   partner_name?: string
   terms_conditions?: string
@@ -38,22 +64,43 @@ interface Reward {
   created_at: string
 }
 
+interface RewardFormData {
+  title: string
+  description: string
+  category: string
+  points_cost: number
+  stock_quantity: number | null
+  image_url: string
+  partner_name: string
+  terms_conditions: string
+  expiry_date: string
+  is_active: boolean
+}
+
+const defaultFormData: RewardFormData = {
+  title: "",
+  description: "",
+  category: "discount",
+  points_cost: 100,
+  stock_quantity: 10,
+  image_url: "",
+  partner_name: "",
+  terms_conditions: "",
+  expiry_date: "",
+  is_active: true
+}
+
 export default function AdminRewards() {
   const [rewards, setRewards] = useState<Reward[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingReward, setEditingReward] = useState<Reward | null>(null)
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    points_cost: 100,
-    stock_quantity: "",
-    image_url: "",
-    partner_name: "",
-    terms_conditions: "",
-    expiry_date: "",
-    is_active: true,
+  const [formData, setFormData] = useState<RewardFormData>(defaultFormData)
+  const [stats, setStats] = useState({
+    totalRewards: 0,
+    activeRewards: 0,
+    totalRedemptions: 0,
+    totalValue: 0
   })
 
   const supabase = createClient()
@@ -64,10 +111,23 @@ export default function AdminRewards() {
 
   const loadRewards = async () => {
     try {
-      const { data, error } = await supabase.from("rewards").select("*").order("created_at", { ascending: false })
+      setIsLoading(true)
+      const { data: rewardsData, error } = await supabase
+        .from("rewards")
+        .select("*")
+        .order("created_at", { ascending: false })
 
       if (error) throw error
-      setRewards(data || [])
+
+      const rewards = rewardsData || []
+      const totalRewards = rewards.length
+      const activeRewards = rewards.filter(r => r.is_active).length
+      const totalRedemptions = rewards.reduce((sum, r) => sum + (r.redeemed_count || 0), 0)
+      const totalValue = rewards.reduce((sum, r) => sum + (r.points_cost * (r.redeemed_count || 0)), 0)
+
+      setStats({ totalRewards, activeRewards, totalRedemptions, totalValue })
+      setRewards(rewards)
+
     } catch (error) {
       console.error("Error loading rewards:", error)
       toast({
@@ -80,38 +140,51 @@ export default function AdminRewards() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const handleSaveReward = async () => {
     try {
-      const rewardData = {
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
-        points_cost: formData.points_cost,
-        stock_quantity: formData.stock_quantity ? Number.parseInt(formData.stock_quantity) : null,
-        image_url: formData.image_url || null,
-        partner_name: formData.partner_name || null,
-        terms_conditions: formData.terms_conditions || null,
-        expiry_date: formData.expiry_date || null,
-        is_active: formData.is_active,
+      if (!formData.title || !formData.description) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        })
+        return
+      }
+
+      const submitData = {
+        ...formData,
+        stock_quantity: formData.stock_quantity || null,
+        expiry_date: formData.expiry_date || null
       }
 
       if (editingReward) {
-        const { error } = await supabase.from("rewards").update(rewardData).eq("id", editingReward.id)
+        const { error } = await supabase
+          .from("rewards")
+          .update(submitData)
+          .eq("id", editingReward.id)
 
         if (error) throw error
-        toast({ title: "Success", description: "Reward updated successfully" })
+
+        toast({
+          title: "Success",
+          description: "Reward updated and pushed to marketplace",
+        })
       } else {
-        const { error } = await supabase.from("rewards").insert([rewardData])
+        const { error } = await supabase
+          .from("rewards")
+          .insert([submitData])
 
         if (error) throw error
-        toast({ title: "Success", description: "Reward created successfully" })
+
+        toast({
+          title: "Success",
+          description: "New reward added to marketplace",
+        })
       }
 
       setIsDialogOpen(false)
       setEditingReward(null)
-      resetForm()
+      setFormData(defaultFormData)
       loadRewards()
     } catch (error) {
       console.error("Error saving reward:", error)
@@ -123,31 +196,20 @@ export default function AdminRewards() {
     }
   }
 
-  const handleEdit = (reward: Reward) => {
-    setEditingReward(reward)
-    setFormData({
-      title: reward.title,
-      description: reward.description,
-      category: reward.category,
-      points_cost: reward.points_cost,
-      stock_quantity: reward.stock_quantity?.toString() || "",
-      image_url: reward.image_url || "",
-      partner_name: reward.partner_name || "",
-      terms_conditions: reward.terms_conditions || "",
-      expiry_date: reward.expiry_date || "",
-      is_active: reward.is_active,
-    })
-    setIsDialogOpen(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this reward?")) return
-
+  const handleDeleteReward = async (rewardId: string) => {
     try {
-      const { error } = await supabase.from("rewards").delete().eq("id", id)
+      const { error } = await supabase
+        .from("rewards")
+        .delete()
+        .eq("id", rewardId)
+
       if (error) throw error
 
-      toast({ title: "Success", description: "Reward deleted successfully" })
+      toast({
+        title: "Success",
+        description: "Reward deleted from marketplace",
+      })
+
       loadRewards()
     } catch (error) {
       console.error("Error deleting reward:", error)
@@ -159,249 +221,500 @@ export default function AdminRewards() {
     }
   }
 
-  const resetForm = () => {
+  const handleToggleActive = async (rewardId: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("rewards")
+        .update({ is_active: !isActive })
+        .eq("id", rewardId)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: `Reward ${!isActive ? 'added to marketplace' : 'removed from marketplace'}`,
+      })
+
+      loadRewards()
+    } catch (error) {
+      console.error("Error updating reward:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update reward",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const openEditDialog = (reward: Reward) => {
+    setEditingReward(reward)
     setFormData({
-      title: "",
-      description: "",
-      category: "",
-      points_cost: 100,
-      stock_quantity: "",
-      image_url: "",
-      partner_name: "",
-      terms_conditions: "",
-      expiry_date: "",
-      is_active: true,
+      title: reward.title,
+      description: reward.description,
+      category: reward.category,
+      points_cost: reward.points_cost,
+      stock_quantity: reward.stock_quantity || null,
+      image_url: reward.image_url || "",
+      partner_name: reward.partner_name || "",
+      terms_conditions: reward.terms_conditions || "",
+      expiry_date: reward.expiry_date ? reward.expiry_date.split('T')[0] : "",
+      is_active: reward.is_active
+    })
+    setIsDialogOpen(true)
+  }
+
+  const openCreateDialog = () => {
+    setEditingReward(null)
+    setFormData(defaultFormData)
+    setIsDialogOpen(true)
+  }
+
+  const getCategoryBadge = (category: string) => {
+    const colors = {
+      discount: "bg-blue-100 text-blue-700",
+      voucher: "bg-green-100 text-green-700",
+      product: "bg-purple-100 text-purple-700",
+      experience: "bg-orange-100 text-orange-700",
+      charity: "bg-red-100 text-red-700"
+    }
+    return (
+      <Badge className={colors[category as keyof typeof colors] || colors.discount}>
+        {category.charAt(0).toUpperCase() + category.slice(1)}
+      </Badge>
+    )
+  }
+
+  const getStatusBadge = (reward: Reward) => {
+    const now = new Date()
+    const expiryDate = reward.expiry_date ? new Date(reward.expiry_date) : null
+
+    if (!reward.is_active) {
+      return <Badge variant="secondary" className="flex items-center gap-1">
+        <XCircle className="w-3 h-3" />
+        Hidden
+      </Badge>
+    }
+
+    if (reward.stock_quantity === 0) {
+      return <Badge variant="destructive" className="flex items-center gap-1">
+        <XCircle className="w-3 h-3" />
+        Out of Stock
+      </Badge>
+    }
+
+    if (expiryDate && now > expiryDate) {
+      return <Badge className="bg-gray-100 text-gray-700 flex items-center gap-1">
+        <Calendar className="w-3 h-3" />
+        Expired
+      </Badge>
+    }
+
+    return <Badge className="bg-green-100 text-green-700 flex items-center gap-1">
+      <CheckCircle className="w-3 h-3" />
+      Live in Marketplace
+    </Badge>
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading rewards...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Rewards Management</h1>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+          <div className="h-96 bg-gray-200 rounded-lg"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-            Manage Rewards
-          </h1>
-          <p className="text-muted-foreground mt-2">Create and manage marketplace rewards</p>
+          <h1 className="text-2xl font-bold text-foreground">Rewards Management</h1>
+          <p className="text-muted-foreground">Add new rewards to marketplace, manage existing offers, delete unwanted rewards</p>
         </div>
+        <Button onClick={openCreateDialog} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Add New Reward to Marketplace
+        </Button>
+      </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                setEditingReward(null)
-                resetForm()
-              }}
-              className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Reward
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{editingReward ? "Edit Reward" : "Create New Reward"}</DialogTitle>
-              <DialogDescription>
-                {editingReward ? "Update the reward details" : "Create a new reward for the marketplace"}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., lifestyle, technology, food"
-                    required
-                  />
-                </div>
-              </div>
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Rewards</CardTitle>
+            <Gift className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalRewards}</div>
+            <p className="text-xs text-muted-foreground">All created rewards</p>
+          </CardContent>
+        </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  required
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Rewards</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.activeRewards}</div>
+            <p className="text-xs text-muted-foreground">Live in marketplace</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Redemptions</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalRedemptions}</div>
+            <p className="text-xs text-muted-foreground">User redemptions</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Points Value</CardTitle>
+            <Trophy className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalValue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Total points redeemed</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Rewards Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Rewards</CardTitle>
+          <CardDescription>Manage rewards in the marketplace - add new ones, edit existing, or remove outdated offers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Reward</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Points Cost</TableHead>
+                  <TableHead>Stock</TableHead>
+                  <TableHead>Redeemed</TableHead>
+                  <TableHead>Partner</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rewards.map((reward) => (
+                  <TableRow key={reward.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {reward.image_url ? (
+                          <img 
+                            src={reward.image_url} 
+                            alt={reward.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <Package className="w-6 h-6 text-gray-400" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{reward.title}</div>
+                          <div className="text-sm text-muted-foreground line-clamp-2">
+                            {reward.description}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getCategoryBadge(reward.category)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(reward)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-yellow-600" />
+                        <span>{reward.points_cost} pts</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {reward.stock_quantity !== null && reward.stock_quantity !== undefined 
+                          ? reward.stock_quantity 
+                          : '∞'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span>{reward.redeemed_count || 0}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {reward.partner_name || 'Internal'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {/* View Details */}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{reward.title}</DialogTitle>
+                              <DialogDescription>Reward details and settings</DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Description</label>
+                                <p className="text-sm text-muted-foreground mt-1">{reward.description}</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-sm font-medium">Category</label>
+                                  <p className="text-sm text-muted-foreground">{reward.category}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Points Cost</label>
+                                  <p className="text-sm text-muted-foreground">{reward.points_cost} points</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Partner</label>
+                                  <p className="text-sm text-muted-foreground">{reward.partner_name || 'Internal'}</p>
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">Stock</label>
+                                  <p className="text-sm text-muted-foreground">
+                                    {reward.stock_quantity !== null && reward.stock_quantity !== undefined
+                                      ? reward.stock_quantity 
+                                      : 'Unlimited'}
+                                  </p>
+                                </div>
+                              </div>
+                              {reward.terms_conditions && (
+                                <div>
+                                  <label className="text-sm font-medium">Terms & Conditions</label>
+                                  <p className="text-sm text-muted-foreground mt-1">{reward.terms_conditions}</p>
+                                </div>
+                              )}
+                              {reward.expiry_date && (
+                                <div>
+                                  <label className="text-sm font-medium">Expiry Date</label>
+                                  <p className="text-sm text-muted-foreground">{formatDate(reward.expiry_date)}</p>
+                                </div>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Edit Reward */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(reward)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+
+                        {/* Toggle Active/Add to Marketplace */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleActive(reward.id, reward.is_active)}
+                          className={reward.is_active ? "text-orange-600" : "text-green-600"}
+                        >
+                          {reward.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </Button>
+
+                        {/* Delete Reward */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-red-600">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Reward</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{reward.title}"? This will permanently remove it from the marketplace and cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteReward(reward.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete Reward
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Create/Edit Reward Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingReward ? "Edit Reward" : "Add New Reward"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingReward ? "Update reward and push changes to marketplace" : "Create a new reward and add it to the marketplace"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Title *</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Reward title"
+                  className="mt-1"
                 />
               </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="points">Points Cost</Label>
-                  <Input
-                    id="points"
-                    type="number"
-                    value={formData.points_cost}
-                    onChange={(e) => setFormData({ ...formData, points_cost: Number.parseInt(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Quantity</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock_quantity}
-                    onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                    placeholder="Optional"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="partner">Partner Name</Label>
-                  <Input
-                    id="partner"
-                    value={formData.partner_name}
-                    onChange={(e) => setFormData({ ...formData, partner_name: e.target.value })}
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="expiry">Expiry Date</Label>
-                  <Input
-                    id="expiry"
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="terms">Terms & Conditions</Label>
-                <Textarea
-                  id="terms"
-                  value={formData.terms_conditions}
-                  onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
-                  rows={2}
-                  placeholder="Optional terms and conditions"
+              <div>
+                <label className="text-sm font-medium">Points Cost *</label>
+                <Input
+                  type="number"
+                  value={formData.points_cost}
+                  onChange={(e) => setFormData({ ...formData, points_cost: parseInt(e.target.value) || 0 })}
+                  placeholder="100"
+                  className="mt-1"
                 />
               </div>
-
-              <div className="flex items-center space-x-2">
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description *</label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe the reward and what users will get..."
+                rows={3}
+                className="mt-1"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="discount">Discount</SelectItem>
+                    <SelectItem value="voucher">Voucher</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="experience">Experience</SelectItem>
+                    <SelectItem value="charity">Charity Donation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Stock Quantity</label>
+                <Input
+                  type="number"
+                  value={formData.stock_quantity || ""}
+                  onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value ? parseInt(e.target.value) : null })}
+                  placeholder="10 (leave empty for unlimited)"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Partner Name</label>
+                <Input
+                  value={formData.partner_name}
+                  onChange={(e) => setFormData({ ...formData, partner_name: e.target.value })}
+                  placeholder="Partner company name"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Image URL</label>
+                <Input
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Terms & Conditions</label>
+              <Textarea
+                value={formData.terms_conditions}
+                onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
+                placeholder="Terms and conditions for this reward..."
+                rows={2}
+                className="mt-1"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Expiry Date (Optional)</label>
+                <Input
+                  type="date"
+                  value={formData.expiry_date}
+                  onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
                 <input
                   type="checkbox"
-                  id="active"
+                  id="is_active"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                 />
-                <Label htmlFor="active">Active (visible in marketplace)</Label>
+                <label htmlFor="is_active" className="text-sm font-medium">Add to Marketplace</label>
               </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600"
-                >
-                  {editingReward ? "Update Reward" : "Create Reward"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle>All Rewards</CardTitle>
-          <CardDescription>Manage marketplace rewards and their availability</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Points Cost</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Partner</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rewards.map((reward) => (
-                <TableRow key={reward.id}>
-                  <TableCell className="font-medium">{reward.title}</TableCell>
-                  <TableCell>{reward.category}</TableCell>
-                  <TableCell>{reward.points_cost}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Package className="w-4 h-4" />
-                      {reward.stock_quantity || "∞"}
-                    </div>
-                  </TableCell>
-                  <TableCell>{reward.partner_name || "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant={reward.is_active ? "default" : "secondary"}>
-                      {reward.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {reward.expiry_date ? (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(reward.expiry_date).toLocaleDateString()}
-                      </div>
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(reward)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(reward.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveReward}>
+              {editingReward ? "Update & Push to Marketplace" : "Add to Marketplace"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
