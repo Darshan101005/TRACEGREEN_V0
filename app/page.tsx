@@ -26,6 +26,7 @@ export default async function HomePage() {
             <span className="text-lg sm:text-xl font-semibold tracking-tight">Trace Green</span>
           </Link>
           <nav className="hidden md:flex items-center gap-1 text-sm">
+            <Link href="#qr-code" className="px-3 py-2 rounded-md text-foreground/70 hover:text-foreground hover:bg-muted/60 transition">Mobile Access</Link>
             <Link href="#features" className="px-3 py-2 rounded-md text-foreground/70 hover:text-foreground hover:bg-muted/60 transition">Features</Link>
             <Link href="#how" className="px-3 py-2 rounded-md text-foreground/70 hover:text-foreground hover:bg-muted/60 transition">How It Works</Link>
             <Link href="#impact" className="px-3 py-2 rounded-md text-foreground/70 hover:text-foreground hover:bg-muted/60 transition">Impact</Link>
@@ -160,6 +161,45 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+        <section id="qr-code" className="py-20 bg-muted/30">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <div className="mb-8">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight mb-4">Access on Mobile</h2>
+              <p className="text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                Scan this QR code with your mobile device to open Trace Green directly in your phone's browser. 
+                Perfect for tracking your carbon footprint on the go.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <div className="relative p-6 bg-white rounded-2xl shadow-lg border border-border/50">
+                <Image 
+                  src="/images/tracegreen_qr.png" 
+                  alt="QR Code to access Trace Green on mobile" 
+                  width={200} 
+                  height={200}
+                  className="mx-auto"
+                />
+                <p className="mt-4 text-xs text-muted-foreground font-medium">
+                  Scan with your camera app
+                </p>
+              </div>
+            </div>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span>Works on iOS & Android</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span>No app download required</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                <span>Instant access to all features</span>
+              </div>
+            </div>
+          </div>
+        </section>
         <section id="features" className="py-28">
           <div className="mx-auto max-w-7xl px-6">
             <div className="max-w-2xl mb-14">
@@ -243,6 +283,7 @@ export default async function HomePage() {
               <span className="font-medium">Trace Green</span>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-3 text-muted-foreground">
+              <Link href="#qr-code" className="hover:text-foreground transition">Mobile Access</Link>
               <Link href="#features" className="hover:text-foreground transition">Features</Link>
               <Link href="#how" className="hover:text-foreground transition">How It Works</Link>
               <Link href="#impact" className="hover:text-foreground transition">Impact</Link>
