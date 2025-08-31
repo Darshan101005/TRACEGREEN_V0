@@ -16,12 +16,6 @@ Your project is live at:
 
 **[https://vercel.com/djs-projects-ca0b3360/v0-trace-green-logo](https://vercel.com/djs-projects-ca0b3360/v0-trace-green-logo)**
 
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/qtfi76uQksz](https://v0.app/chat/projects/qtfi76uQksz)**
-
 ## How It Works
 
 1. Create and modify your project using [v0.app](https://v0.app)
